@@ -113,6 +113,7 @@ class WebAppAuthService:
             "session_id": account.email,
             "token_source": "webapp_login_token",
             "auth_type": "internal",
+            "granted_at": datetime.now(UTC).isoformat(),
             "exp": exp,
         }
 
