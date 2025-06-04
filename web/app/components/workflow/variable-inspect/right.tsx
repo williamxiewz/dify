@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import {
   RiArrowGoBackLine,
   RiCloseLine,
+  RiDeleteBinLine,
   RiMenuLine,
 } from '@remixicon/react'
 import { useStore } from '../store'
@@ -35,8 +36,10 @@ const Right = ({
   const { t } = useTranslation()
   const bottomPanelWidth = useStore(s => s.bottomPanelWidth)
   const setShowVariableInspectPanel = useStore(s => s.setShowVariableInspectPanel)
+  const setCurrentFocusNodeId = useStore(s => s.setCurrentFocusNodeId)
 
   const {
+    resetConversationVar,
     resetToLastRunVar,
     editInspectVarValue,
   } = useCurrentVars()
@@ -49,6 +52,16 @@ const Right = ({
   const resetValue = () => {
     if (!currentNodeVar) return
     resetToLastRunVar(currentNodeVar.nodeId, currentNodeVar.var.id)
+  }
+
+  const handleClose = () => {
+    setShowVariableInspectPanel(false)
+    setCurrentFocusNodeId('')
+  }
+
+  const handleClear = () => {
+    if (!currentNodeVar) return
+    resetConversationVar(currentNodeVar.var.id)
   }
 
   return (
@@ -104,12 +117,19 @@ const Right = ({
                   </ActionButton>
                 </Tooltip>
               )}
+              {currentNodeVar.var.type === VarInInspectType.conversation && (
+                <Tooltip popupContent={t('workflow.debug.variableInspect.clearNode')}>
+                  <ActionButton onClick={handleClear}>
+                    <RiDeleteBinLine className='h-4 w-4' />
+                  </ActionButton>
+                </Tooltip>
+              )}
               {currentNodeVar.var.value_type !== 'secret' && (
                 <CopyFeedback content={currentNodeVar.var.value ? JSON.stringify(currentNodeVar.var.value) : ''} />
               )}
             </>
           )}
-          <ActionButton onClick={() => setShowVariableInspectPanel(false)}>
+          <ActionButton onClick={handleClose}>
             <RiCloseLine className='h-4 w-4' />
           </ActionButton>
         </div>

@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   RiCloseLine,
@@ -88,7 +88,7 @@ const Panel: FC = () => {
       return res
     }
     if (currentFocusNodeId === VarInInspectType.system) {
-      const currentVar = conversationVars.find(v => v.id === currentVarId)
+      const currentVar = systemVars.find(v => v.id === currentVarId)
       const res = {
         nodeId: VarInInspectType.system,
         title: VarInInspectType.system,
@@ -128,16 +128,21 @@ const Panel: FC = () => {
   const handleNodeVarSelect = useCallback((node: currentVarType) => {
     setCurrentFocusNodeId(node.nodeId)
     setCurrentVarId(node.var.id)
-    const targetNode = nodesWithInspectVars.find(n => n.nodeId === node.nodeId)
-    if (targetNode && !targetNode.isValueFetched)
-      fetchInspectVarValue([node.nodeId])
-  }, [fetchInspectVarValue, nodesWithInspectVars])
+  }, [setCurrentFocusNodeId, setCurrentVarId])
+
+  useEffect(() => {
+    if (currentFocusNodeId && currentVarId) {
+      const targetNode = nodesWithInspectVars.find(node => node.nodeId === currentFocusNodeId)
+      if (targetNode && !targetNode.isValueFetched)
+        fetchInspectVarValue([currentFocusNodeId])
+    }
+  }, [currentFocusNodeId, currentVarId, nodesWithInspectVars, fetchInspectVarValue])
 
   if (isEmpty) {
     return (
       <div className={cn('flex h-full flex-col')}>
         <div className='flex shrink-0 items-center justify-between pl-4 pr-2 pt-2'>
-          <div className='system-sm-semibold-uppercase'>{t('workflow.debug.variableInspect.title')}</div>
+          <div className='system-sm-semibold-uppercase text-text-primary'>{t('workflow.debug.variableInspect.title')}</div>
           <ActionButton onClick={() => setShowVariableInspectPanel(false)}>
             <RiCloseLine className='h-4 w-4' />
           </ActionButton>
