@@ -83,6 +83,8 @@ SupportedComparisonOperator = Literal[
     "is not",
     "empty",
     "not empty",
+    "in",
+    "not in",
     # for number
     "=",
     "≠",
@@ -103,7 +105,7 @@ class Condition(BaseModel):
 
     name: str
     comparison_operator: SupportedComparisonOperator
-    value: str | Sequence[str] | None | int | float = None
+    value: str | Sequence[str] | Sequence[int] | Sequence[float] | None | int | float = None
 
 
 class MetadataFilteringCondition(BaseModel):
