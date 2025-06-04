@@ -30,7 +30,6 @@ from core.workflow.nodes.node_mapping import LATEST_VERSION, NODE_TYPE_CLASSES_M
 from core.workflow.workflow_entry import WorkflowEntry
 from events.app_event import app_draft_workflow_was_synced, app_published_workflow_was_updated
 from extensions.ext_database import db
-from factories.variable_factory import segment_to_variable
 from models.account import Account
 from models.model import App, AppMode
 from models.tools import WorkflowToolProvider
@@ -324,18 +323,9 @@ class WorkflowService:
         if not draft_workflow:
             raise ValueError("Workflow not initialized")
 
-        # TODO(QuantumGhost): We may get rid of the `list_conversation_variables`
-        # here, and rely on `DraftVarLoader` to load conversation variables.
-
-        with Session(bind=db.engine) as session:
+        with Session(bind=db.engine, expire_on_commit=False) as session, session.begin():
             draft_var_srv = WorkflowDraftVariableService(session)
             draft_var_srv.prefill_conversation_variable_default_values(draft_workflow)
-
-            conv_vars_models = draft_var_srv.list_conversation_variables(app_id=app_model.id)
-            conv_vars = [
-                segment_to_variable(segment=v.get_value(), id=v.id, selector=v.get_selector())
-                for v in conv_vars_models.variables
-            ]
 
         node_config = draft_workflow.get_node_config_by_id(node_id)
         node_type = NodeType(node_config.get("data", {}).get("type"))
@@ -355,7 +345,8 @@ class WorkflowService:
                     user_id=account.id,
                     user_inputs=user_inputs,
                     workflow=draft_workflow,
-                    conversation_variables=conv_vars,
+                    # NOTE(QuantumGhost): We rely on `DraftVarLoader` to load conversation variables.
+                    conversation_variables=[],
                     node_type=node_type,
                     conversation_id=conversation_id,
                 )
