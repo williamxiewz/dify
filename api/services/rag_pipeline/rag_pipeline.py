@@ -16,6 +16,7 @@ from core.model_runtime.utils.encoders import jsonable_encoder
 from core.repositories.sqlalchemy_workflow_node_execution_repository import SQLAlchemyWorkflowNodeExecutionRepository
 from core.variables.variables import Variable
 from core.workflow.entities.node_entities import NodeRunResult
+from core.workflow.entities.workflow_node_execution import WorkflowNodeExecutionStatus
 from core.workflow.errors import WorkflowNodeRunFailedError
 from core.workflow.graph_engine.entities.event import InNodeEvent
 from core.workflow.nodes.base.node import BaseNode
@@ -23,7 +24,7 @@ from core.workflow.nodes.enums import ErrorStrategy, NodeType
 from core.workflow.nodes.event.event import RunCompletedEvent
 from core.workflow.nodes.event.types import NodeEvent
 from core.workflow.nodes.node_mapping import LATEST_VERSION, NODE_TYPE_CLASSES_MAPPING
-from core.workflow.repository.workflow_node_execution_repository import OrderConfig
+from core.workflow.repositories.workflow_node_execution_repository import OrderConfig
 from core.workflow.workflow_entry import WorkflowEntry
 from extensions.ext_database import db
 from libs.infinite_scroll_pagination import InfiniteScrollPagination
@@ -32,8 +33,7 @@ from models.dataset import Pipeline, PipelineBuiltInTemplate, PipelineCustomized
 from models.enums import CreatorUserRole, WorkflowRunTriggeredFrom
 from models.workflow import (
     Workflow,
-    WorkflowNodeExecution,
-    WorkflowNodeExecutionStatus,
+    WorkflowNodeExecutionModel,
     WorkflowNodeExecutionTriggeredFrom,
     WorkflowRun,
     WorkflowType,
@@ -325,7 +325,7 @@ class RagPipelineService:
 
     def run_draft_workflow_node(
         self, pipeline: Pipeline, node_id: str, user_inputs: dict, account: Account
-    ) -> WorkflowNodeExecution:
+    ) -> WorkflowNodeExecutionModel:
         """
         Run draft workflow node
         """
@@ -360,7 +360,7 @@ class RagPipelineService:
 
     def run_datasource_workflow_node(
         self, pipeline: Pipeline, node_id: str, user_inputs: dict, account: Account
-    ) -> WorkflowNodeExecution:
+    ) -> WorkflowNodeExecutionModel:
         """
         Run published workflow datasource
         """
@@ -395,7 +395,7 @@ class RagPipelineService:
 
     def run_free_workflow_node(
         self, node_data: dict, tenant_id: str, user_id: str, node_id: str, user_inputs: dict[str, Any]
-    ) -> WorkflowNodeExecution:
+    ) -> WorkflowNodeExecutionModel:
         """
         Run draft workflow node
         """
@@ -423,7 +423,7 @@ class RagPipelineService:
         start_at: float,
         tenant_id: str,
         node_id: str,
-    ) -> WorkflowNodeExecution:
+    ) -> WorkflowNodeExecutionModel:
         """
         Handle node run result
 
@@ -482,7 +482,7 @@ class RagPipelineService:
             node_run_result = None
             error = e.error
 
-        workflow_node_execution = WorkflowNodeExecution()
+        workflow_node_execution = WorkflowNodeExecutionModel()
         workflow_node_execution.id = str(uuid4())
         workflow_node_execution.tenant_id = tenant_id
         workflow_node_execution.triggered_from = WorkflowNodeExecutionTriggeredFrom.SINGLE_STEP.value
@@ -567,9 +567,11 @@ class RagPipelineService:
             return {}
 
         # get datasource provider
-        datasource_provider_variables = [item for item in rag_pipeline_variables
-                                         if item.get("belong_to_node_id") == node_id
-                                         or item.get("belong_to_node_id") == "shared"]
+        datasource_provider_variables = [
+            item
+            for item in rag_pipeline_variables
+            if item.get("belong_to_node_id") == node_id or item.get("belong_to_node_id") == "shared"
+        ]
         return datasource_provider_variables
 
     def get_rag_pipeline_paginate_workflow_runs(self, pipeline: Pipeline, args: dict) -> InfiniteScrollPagination:
@@ -643,7 +645,7 @@ class RagPipelineService:
         self,
         pipeline: Pipeline,
         run_id: str,
-    ) -> list[WorkflowNodeExecution]:
+    ) -> list[WorkflowNodeExecutionModel]:
         """
         Get workflow run node execution list
         """
